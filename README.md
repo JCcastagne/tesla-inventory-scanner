@@ -29,5 +29,22 @@ The notifications should repeat if this is run repeatedly to better notify the u
 
 The script creates local files to track state, cookies, and inventory. 
 
+# example
+```
+uv run canada_tesla.py -z "V5L1H7" -reg "BC" --lat 49.255052 --lng -122.748232 -m m3
+======================================================================
+Fetching live database rows for MODEL 3 in BC (V5L1H7)...
+ -> Public database contains 1 active matches inside this evaluation zone.
+    🚨 [UNACKNOWLEDGED / ALERTING] - [[BRANDNEW] Premium All-Wheel Drive] - Price: $52,590 | VIN: LRW3198_2758b2cbb7cc50beab7cd506fee79f44
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+🚨 TESLA INVENTORY ALERT (1 Active Vehicle(s) Require Action)!
+✨ ACTIVE: [[BRANDNEW] Premium All-Wheel Drive] - ['Ultra Red', '18’’ Photon Wheels', 'Black Premium Interior', 'Traffic-Aware Cruise Control']
+Price: $52,590 | Status: Available | VIN: https://www.tesla.com/en_CA/m3/order/LRW3198_2758b2cbb7cc50beab7cd506fee79f44
+🔗 View Inventory: https://www.tesla.com/en_CA/inventory/new/m3?arrangeby=relevance&zip=V5L1H7&range=200
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+======================================================================
+```
+
 # other
 written with alot of help from Gemini
