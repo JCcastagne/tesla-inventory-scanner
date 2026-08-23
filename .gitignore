@@ -1,0 +1,5 @@
+tesla_session_cache.json
+tesla_vehicle_inventory_cache.json
+tg_offset.txt
+tesla_profile/
+*.log
