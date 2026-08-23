@@ -1,6 +1,7 @@
 ##Example shell script that scans all regions once per hour. 
 ##I generated unique list of tesla service center postal codes with co-ordinatnes.
 ##It searches 200km radius and I tried to avoid overlap, but there still is some.
+##On mac laptop, I would run this with caffeinate to avoid computer sleeping
 
 TG_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxx"
 TG_CHAT="-2346326326326326326"
