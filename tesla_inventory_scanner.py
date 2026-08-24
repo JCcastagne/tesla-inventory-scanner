@@ -471,13 +471,16 @@ def main():
     # Process inventory request check safely with hot loop recovery matrix
     success = request_inventory_safely(args, session)
 
-    if not success:
-        print("\n -> Cache validation failed or dropped by proxy. Refreshing credentials via SeleniumBase...")
-        session = get_live_akamai_session(args.model, args.zip)
-        print("-" * 70)
-        request_inventory_safely(args, session)
+if not success:
+    print("\n -> Cache validation failed or dropped by proxy. Refreshing credentials via SeleniumBase...")
+    session = get_live_akamai_session(args.model, args.zip)
 
-    print("=" * 70)
+    print("-" * 70)
+
+    success = request_inventory_safely(args, session)
+
+    if not success:
+        print(" -> Inventory request failed again after session refresh.")
 
 if __name__ == "__main__":
     main()
