@@ -1,7 +1,7 @@
-##Example shell script that scans all regions once per hour. 
-##I generated unique list of tesla service center postal codes with co-ordinatnes.
-##It searches 200km radius and I tried to avoid overlap, but there still is some.
-##On mac laptop, I would run this with caffeinate to avoid computer sleeping
+##Shell script that scans all regions once per hour.
+
+##Each selected postal-code point has a maximum coverage radius of 200 km, with the objective to cover every Tesla store/dealership currently listed by Tesla in Canada with as few points as practical.
+##Tesla’s current Canadian store directory spans Alberta, BC, Manitoba, New Brunswick, Nova Scotia, Ontario, Quebec and Saskatchewan.
 
 TG_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxx"
 TG_CHAT="-2346326326326326326"
@@ -13,39 +13,50 @@ while true; do
  echo " 🚀 INVENTORY SCAN INITIALIZED: $(date "+%Y-%m-%d %H:%M:%S")"
  echo "========================================================================"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "T2H0X3" -reg "AB" --lat 51.0447 --lng -114.0719
+ ##CALGARY, AB - Covers Calgary-Fairmount.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "T2H 0X3" -reg "AB" --lat 50.993254 --lng -114.063780
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "T5S0A2" -reg "AB" --lat 53.5461 --lng -113.4938
+ ##EDMONTON, AB - Covers Edmonton, Edmonton Southgate Pop-Up.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "T5S 0A2" -reg "AB" --lat 53.560396 --lng -113.624892
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "V1V2Y4" -reg "BC" --lat 49.8874 --lng -119.4960
+ ##VANCOUVER, BC - Covers West Vancouver Park Royal, Richmond, Surrey Scott Rd, Surrey, CF Richmond Centre Pop-Up, Port Coquitlam, Vancouver-Raymur Gallery.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "V6J 1L9" -reg "BC" --lat 49.267845 --lng -123.141836
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "V5L1H7" -reg "BC" --lat 49.2827 --lng -123.1207
+ ##KELOWNA, BC - Covers Kelowna.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "V1V 2Y4" -reg "BC" --lat 49.880000 --lng -119.440000
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "R3T5V7" -reg "MB" --lat 49.8951 --lng -97.1384
+ ##SASKATOON, SK - Covers Saskatoon.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "S7T 0C9" -reg "SK" --lat 52.085519 --lng -106.653751
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "B3B1V5" -reg "NS" --lat 44.6681 --lng -63.5674
+ ##WINNIPEG, MB - Covers Winnipeg.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "R3T 5V7" -reg "MB" --lat 49.895000 --lng -97.140000
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "M3A1C6" -reg "ON" --lat 43.6532 --lng -79.3832
+ ##TORONTO, ON - Covers CF Sherway Gardens, Lawrence Avenue, Yorkdale Shopping Centre, Chrislea Rd Vaughan, Markham, Markham Mall Pop-Up, Oshawa Center Mall Oshawa, Doral Dr Barrie, Coachworks Cres Brampton, CF Like Ridge Mall Hamilton, Wyecroft Oakville, Premium Outlets Pop-Up Halton Hills, Victoria St N Kitchener, CF Masonville Place London, Wonderland Rs S London.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "M9C 1B8" -reg "ON" --lat 43.612678 --lng -79.557579
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "H4P1L9" -reg "QC" --lat 45.5017 --lng -73.5673
+ ##MONTREAL, QC - Covers Montreal, Laval, Saint-Brun-de-Montarville, CF Fairview Pointe-Claire Pop-Up, West Island Kirkland, Sherbrooke, Carling Ottawa, Barrhaven Nepean/Ottawa.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "H4P 1L9" -reg "QC" --lat 45.496185 --lng -73.658793
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "G1N2E5" -reg "QC" --lat 46.8139 --lng -71.2080
+ ##QUEBEC CITY, QC - Covers Quebec City.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "G1N 2G3" -reg "QC" --lat 46.813900 --lng -71.207900
  echo "------------------------------------------------------------------------"
 
- uv run tesla_inventory_scanner.py $COMMON_ARGS -z "S7T0C9" -reg "SK" --lat 52.1332 --lng -106.6700
+ ##DIEPPE, NB & Dartmouth NS - Covers CF Champlain Mall, Dartmouth NS.
+ uv run tesla_inventory_scanner.py $COMMON_ARGS -z "E1A 4X5" -reg "NB" --lat 46.094000 --lng -64.735000
+ echo "------------------------------------------------------------------------"
 
  echo "========================================================================"
  echo " ✅ Full regional scanning sequence complete."
- echo " 💤 Sleeping for 1 hour until the next refresh pass..."
+ echo " 💤 Sleeping for 5 minutes until the next refresh pass."
  echo "========================================================================"
 
- sleep 3600
+ sleep 300
 done
