@@ -7,3 +7,6 @@ tesla_profile/
 # Environment variables
 .env
 *.env
+
+# OS generated files
+.DS_Store
