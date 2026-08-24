@@ -149,7 +149,7 @@ def process_telegram_updates(token):
 
 def trigger_alert_notifications(title, description, web_url, token, chat_id, reply_markup=None):
     """Dispatches notifications across terminal and active communication loops."""
-    full_description = f"{description}\n🔗 View Inventory: {web_url}"
+    full_description = f"{description}\n🌐 View Inventory: {web_url}"
     print("\n" + "!"*60 + f"\n{title}\n{full_description}" + "!"*60)
 
     sys.stdout.write('\a')
@@ -388,7 +388,7 @@ def request_inventory_safely(args, session):
     for sold_vin in sold_vins:
         sold_info = historical_inventory[search_key][sold_vin]
         sold_trim = sold_info.get("trim", model_name)
-        print(f"    ❌ [REMOVED/SOLD] - [{sold_trim}] - VIN: {sold_vin}")
+        print(f"    ❌ [REMOVED/GONE] - [{sold_trim}] - VIN: {sold_vin}")
         sold_vehicles_detected.append(sold_info)
         del historical_inventory[search_key][sold_vin]
 
@@ -404,7 +404,7 @@ def request_inventory_safely(args, session):
 
     # Dispatch alerts with Inline Acknowledge Buttons for all unacknowledged cars
     if unacknowledged_alerts_to_send:
-        title = f"🚨 TESLA INVENTORY ALERT ({len(unacknowledged_alerts_to_send)} Active Vehicle(s) Require Action)!"
+        title = f"🚨 TESLA INVENTORY ALERT - {len(unacknowledged_alerts_to_send)} Active vehicle(s)!"
 
         for v in unacknowledged_alerts_to_send:
             body = f"✨ ACTIVE: [{v['trim']}] - {v['options']}\nPrice: {v['price']} | Status: {v['status']} | VIN: {v['vin']}"
@@ -423,14 +423,14 @@ def request_inventory_safely(args, session):
 
     # Trigger alerts for SOLD entries
     if sold_vehicles_detected:
-        title = f"💨 TESLA INVENTORY SOLD: {len(sold_vehicles_detected)} {model_name}(s) Left Market in {args.region} ({args.zip})!"
+        title = f"💨 TESLA INVENTORY GONE: {len(sold_vehicles_detected)} {model_name}(s) left market in {args.region} ({args.zip})!"
         body = ""
         for v in sold_vehicles_detected:
             trim = v.get("trim", model_name)
             options = v.get("options", [])
             price = v.get("price", "N/A")
             vin_link = v.get("vin", v.get("raw_vin", "N/A"))
-            body += f"❌ SOLD: [{trim}] - {options} | Price: {price} | VIN: {vin_link}\n"
+            body += f"❌ GONE: [{trim}] - {options} | Price: {price} | VIN: {vin_link}\n"
         trigger_alert_notifications(title, body, direct_web_url, args.tg_token, args.tg_chat)
 
     return True
@@ -439,7 +439,7 @@ def request_inventory_safely(args, session):
 # ENTRY INITIALIZATION CONTRACT
 # ==============================================================================
 def main():
-    parser = argparse.ArgumentParser(description="Tesla Custom Laptop Inventory Tracker Engine")
+    parser = argparse.ArgumentParser(description="Tesla Inventory Tracker")
     parser.add_argument("-m", "--model", choices=["ct", "my", "m3"], required=True)
     parser.add_argument("-z", "--zip", default="VV3B0G6")
     parser.add_argument("-r", "--range", default="200")
