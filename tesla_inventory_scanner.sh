@@ -3,12 +3,17 @@
 ##Each selected postal-code point has a maximum coverage radius of 200 km, with the objective to cover every Tesla store/dealership currently listed by Tesla in Canada with as few points as practical.
 ##Tesla’s current Canadian store directory spans Alberta, BC, Manitoba, New Brunswick, Nova Scotia, Ontario, Quebec and Saskatchewan.
 
+## Tokens to connect to Telegram for notifications. Replace with your own.
 TG_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxx"
-TG_CHAT="-2346326326326326326"
+TG_CHAT="xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
+## Common arguments for the Tesla inventory scanner script.
 COMMON_ARGS=(-m my -pt cash -pr "1,200000" --tg_token "$TG_TOKEN" --tg_chat "$TG_CHAT")
 
 while true; do
+ ## Take note of the start time (to calculate how long the scan took).
+ START=$(date +%s)
+
  echo "========================================================================"
  echo " 🚀 INVENTORY SCAN INITIALIZED: $(date "+%Y-%m-%d %H:%M:%S")"
  echo "========================================================================"
@@ -58,5 +63,13 @@ while true; do
  echo " 💤 Sleeping for 5 minutes until the next refresh pass."
  echo "========================================================================"
 
- sleep 300
+ ## Calculate how long the scan took, and sleep for the remainder (if any) of the 5 minutes.
+ END=$(date +%s)
+ ELAPSED=$((END - START))
+ SLEEP_TIME=$((300 - ELAPSED))
+
+ if [ "$SLEEP_TIME" -gt 0 ]; then
+  sleep "$SLEEP_TIME"
+ fi
+
 done
