@@ -3,3 +3,7 @@ tesla_vehicle_inventory_cache.json
 tg_offset.txt
 tesla_profile/
 *.log
+
+# Environment variables
+.env
+*.env
