@@ -3,12 +3,21 @@
 ##Each selected postal-code point has a maximum coverage radius of 200 km, with the objective to cover every Tesla store/dealership currently listed by Tesla in Canada with as few points as practical.
 ##Tesla’s current Canadian store directory spans Alberta, BC, Manitoba, New Brunswick, Nova Scotia, Ontario, Quebec and Saskatchewan.
 
-## Tokens to connect to Telegram for notifications. Replace with your own.
-TG_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxx"
-TG_CHAT="xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+## Tokens to connect to Telegram for notifications. Create your own with an .ENV file that contains the following variables:
+## TG_TOKEN=your_telegram_bot_token_here
+## TG_CHAT=your_telegram_chat_id_here
+#!/bin/bash
+: "${TG_TOKEN:?TG_TOKEN is not set}"
+: "${TG_CHAT:?TG_CHAT is not set}"
 
 ## Common arguments for the Tesla inventory scanner script.
-COMMON_ARGS=(-m my -pt cash -pr "1,200000" --tg_token "$TG_TOKEN" --tg_chat "$TG_CHAT")
+COMMON_ARGS=(
+  -m my 
+  -pt cash 
+  -pr "1,200000" 
+  --tg_token "$TG_TOKEN" 
+  --tg_chat "$TG_CHAT"
+)
 
 while true; do
  ## Take note of the start time (to calculate how long the scan took).
