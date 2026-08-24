@@ -231,8 +231,6 @@ def request_inventory_safely(args, session):
         'pragma': 'no-cache',
         'referer': f'https://www.tesla.com/en_CA/inventory/new/{args.model}?arrangeby=relevance&zip={urllib.parse.quote_plus(args.zip)}&range={args.range}',
         'sec-ch-ua': '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
