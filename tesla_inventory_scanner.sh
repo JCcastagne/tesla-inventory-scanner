@@ -1,27 +1,26 @@
-##Shell script that scans all regions once per hour.
+#!/bin/bash
 
 ##Each selected postal-code point has a maximum coverage radius of 200 km, with the objective to cover every Tesla store/dealership currently listed by Tesla in Canada with as few points as practical.
-##Tesla’s current Canadian store directory spans Alberta, BC, Manitoba, New Brunswick, Nova Scotia, Ontario, Quebec and Saskatchewan.
 
-## Tokens to connect to Telegram for notifications. Create your own with an .ENV file that contains the following variables:
-## TG_TOKEN=your_telegram_bot_token_here
-## TG_CHAT=your_telegram_chat_id_here
-#!/bin/bash
-: "${TG_TOKEN:?TG_TOKEN is not set}"
-: "${TG_CHAT:?TG_CHAT is not set}"
+## Required environment variable:
+## DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+set -u
+
+: "${DISCORD_WEBHOOK_URL:?DISCORD_WEBHOOK_URL is not set}"
 
 ## Common arguments for the Tesla inventory scanner script.
 COMMON_ARGS=(
-  -m my 
-  -pt cash 
-  -pr "1,200000" 
-  --tg_token "$TG_TOKEN" 
-  --tg_chat "$TG_CHAT"
+  -m my
+  -pt cash
+  -pr "1,200000"
+  --discord_webhook "$DISCORD_WEBHOOK_URL"
 )
 
 while true; do
- ## Take note of the start time (to calculate how long the scan took).
- START=$(date +%s)
+  ## Record the cycle start time so the next cycle begins approximately
+  ## five minutes after this one began.
+  START=$(date +%s)
 
  echo "========================================================================"
  echo " 🚀 INVENTORY SCAN INITIALIZED: $(date "+%Y-%m-%d %H:%M:%S")"
@@ -72,13 +71,15 @@ while true; do
  echo " 💤 Sleeping for 5 minutes until the next refresh pass."
  echo "========================================================================"
 
- ## Calculate how long the scan took, and sleep for the remainder (if any) of the 5 minutes.
- END=$(date +%s)
- ELAPSED=$((END - START))
- SLEEP_TIME=$((300 - ELAPSED))
+  ## Sleep only for the remainder of the five-minute cycle.
+  END=$(date +%s)
+  ELAPSED=$((END - START))
+  SLEEP_TIME=$((300 - ELAPSED))
 
- if [ "$SLEEP_TIME" -gt 0 ]; then
-  sleep "$SLEEP_TIME"
- fi
-
+  if [ "$SLEEP_TIME" -gt 0 ]; then
+    echo " 💤 Sleeping for ${SLEEP_TIME} seconds until the next refresh pass."
+    sleep "$SLEEP_TIME"
+  else
+    echo " ⚠️ Scan cycle took ${ELAPSED}s; starting the next cycle immediately."
+  fi
 done
