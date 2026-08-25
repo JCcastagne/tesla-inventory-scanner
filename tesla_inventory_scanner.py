@@ -1,7 +1,9 @@
+# /// script
 # dependencies = [
 #     "curl-cffi",
 #     "nodriver",
 # ]
+# ///
 
 import os
 import sys
