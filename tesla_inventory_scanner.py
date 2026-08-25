@@ -171,8 +171,8 @@ def request_inventory_safely(args, session):
             f"&range={args.range}"
         ),
         "sec-ch-ua": (
-            '"Chromium";v="148", "Google Chrome";v="148", '
-            '"Not/A)Brand";v="99"'
+        '"Chromium";v="151", "Google Chrome";v="151", '
+        '"Not_A Brand";v="99"'
         ),
         "sec-ch-ua-platform": '"Linux"',
         "sec-fetch-dest": "empty",
