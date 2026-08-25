@@ -1,10 +1,7 @@
-# /// script
-# requires-python = ">=3.8"
 # dependencies = [
 #     "curl-cffi",
-#     "seleniumbase",
+#     "nodriver",
 # ]
-# ///
 
 import os
 import sys
@@ -12,7 +9,7 @@ import json
 import time
 import urllib.parse
 import argparse
-from seleniumbase import SB
+import nodriver as uc
 from curl_cffi import requests as curl_requests
 
 # Cache storage tracking engines
@@ -114,106 +111,136 @@ def save_json_file(file_path, data):
 # MAIN TRACKING PIPELINE
 # ==============================================================================
 def fetch_inventory_via_browser(args):
-    """Fetch Tesla inventory from inside the same browser session."""
-    print("Opening browser session through virtual display...")
+    """Fetch Tesla inventory through a Nodriver-controlled Chrome session."""
 
-    profile_path = os.path.abspath("./tesla_profile")
+    async def _fetch():
+        print("Opening Chrome through Nodriver...")
 
-    if not os.path.exists(profile_path):
-        os.makedirs(profile_path)
+        profile_path = os.path.abspath("./tesla_nodriver_profile")
 
-    encoded_zip = urllib.parse.quote_plus(args.zip)
+        encoded_zip = urllib.parse.quote_plus(args.zip)
 
-    inventory_page_url = (
-        f"https://www.tesla.com/en_CA/inventory/new/{args.model}"
-        f"?arrangeby=relevance"
-        f"&zip={encoded_zip}"
-        f"&range={args.range}"
-    )
-
-    query_params = {
-        "query": {
-            "model": args.model,
-            "condition": "new",
-            "options": {},
-            "arrangeby": "Relevance",
-            "order": "desc",
-            "market": args.market,
-            "language": "en",
-            "super_region": "north america",
-            "PaymentType": args.payment_type,
-            "lng": args.lng,
-            "lat": args.lat,
-            "zip": args.zip,
-            "region": args.region,
-            "range": int(args.range),
-        },
-        "offset": 0,
-        "count": 24,
-        "outsideOffset": 0,
-        "outsideSearch": False,
-        "isFalconDeliverySelectionEnabled": True,
-        "version": "v2",
-    }
-
-    if args.payment_range:
-        query_params["query"]["paymentRange"] = args.payment_range
-
-    encoded_query = urllib.parse.quote(
-        json.dumps(query_params, separators=(",", ":"))
-    )
-
-    api_url = (
-        "https://www.tesla.com/inventory/api/v4/inventory-results"
-        f"?query={encoded_query}"
-    )
-
-    with SB(
-        uc=True,
-        xvfb=True,
-        user_data_dir=profile_path,
-    ) as sb:
-        sb.uc_open_with_reconnect(
-            inventory_page_url,
-            reconnect_time=6,
+        inventory_page_url = (
+            f"https://www.tesla.com/en_CA/inventory/new/{args.model}"
+            f"?arrangeby=relevance"
+            f"&zip={encoded_zip}"
+            f"&range={args.range}"
         )
 
-        time.sleep(3)
-
-        sb.driver.set_script_timeout(40)
-
-        script = """
-        const url = arguments[0];
-        const done = arguments[arguments.length - 1];
-
-        fetch(url, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "accept": "application/json, text/plain, */*"
+        query_params = {
+            "query": {
+                "model": args.model,
+                "condition": "new",
+                "options": {},
+                "arrangeby": "Relevance",
+                "order": "desc",
+                "market": args.market,
+                "language": "en",
+                "super_region": "north america",
+                "PaymentType": args.payment_type,
+                "lng": args.lng,
+                "lat": args.lat,
+                "zip": args.zip,
+                "region": args.region,
+                "range": int(args.range),
             },
-            cache: "no-store"
-        })
-        .then(async response => {
-            const text = await response.text();
+            "offset": 0,
+            "count": 24,
+            "outsideOffset": 0,
+            "outsideSearch": False,
+            "isFalconDeliverySelectionEnabled": True,
+            "version": "v2",
+        }
 
-            done({
-                status: response.status,
-                text: text
-            });
-        })
-        .catch(error => {
-            done({
-                status: 0,
-                text: "",
-                error: String(error)
-            });
-        });
-        """
+        if args.payment_range:
+            query_params["query"]["paymentRange"] = args.payment_range
 
-        result = sb.driver.execute_async_script(script, api_url)
+        encoded_query = urllib.parse.quote(
+            json.dumps(query_params, separators=(",", ":"))
+        )
 
-    return result
+        api_url = (
+            "https://www.tesla.com/inventory/api/v4/inventory-results"
+            f"?query={encoded_query}"
+        )
+
+        browser = None
+
+        try:
+            browser = await uc.start(
+                headless=False,
+                user_data_dir=profile_path,
+                browser_executable_path="/usr/bin/google-chrome",
+                browser_args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--window-size=1920,1080",
+                ],
+            )
+
+            page = await browser.get(inventory_page_url)
+
+            await page
+
+            # Give Tesla/Akamai time to complete browser-side initialization.
+            await uc.sleep(8)
+
+            current_url = page.url
+
+            title_result = await page.evaluate("document.title")
+            title = title_result if isinstance(title_result, str) else str(title_result)
+
+            print(f" -> Browser URL: {current_url}")
+            print(f" -> Browser title: {title}")
+
+            result = await page.evaluate(
+                f"""
+                (async () => {{
+                    try {{
+                        const response = await fetch(
+                            {json.dumps(api_url)},
+                            {{
+                                method: "GET",
+                                credentials: "include",
+                                headers: {{
+                                    "accept": "application/json, text/plain, */*"
+                                }},
+                                cache: "no-store"
+                            }}
+                        );
+
+                        const text = await response.text();
+
+                        return JSON.stringify({{
+                            status: response.status,
+                            text: text
+                        }});
+                    }} catch (error) {{
+                        return JSON.stringify({{
+                            status: 0,
+                            text: "",
+                            error: String(error)
+                        }});
+                    }}
+                }})()
+                """,
+                await_promise=True,
+            )
+
+            if not result:
+                return None
+
+            if isinstance(result, str):
+                return json.loads(result)
+
+            return result
+
+        finally:
+            if browser is not None:
+                browser.stop()
+
+    return uc.loop().run_until_complete(_fetch())
+
 
 def request_inventory_safely(args):
     model_mapping = {
