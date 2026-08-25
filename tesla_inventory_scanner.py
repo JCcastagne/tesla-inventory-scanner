@@ -16,7 +16,6 @@ from seleniumbase import SB
 from curl_cffi import requests as curl_requests
 
 # Cache storage tracking engines
-SESSION_CACHE_FILE = os.path.abspath("./tesla_session_cache.json")
 VEHICLE_CACHE_FILE = os.path.abspath("./tesla_vehicle_inventory_cache.json")
 
 
@@ -114,73 +113,23 @@ def save_json_file(file_path, data):
 # ==============================================================================
 # MAIN TRACKING PIPELINE
 # ==============================================================================
-def get_live_akamai_session(model_code, zip_code):
+def fetch_inventory_via_browser(args):
+    """Fetch Tesla inventory from inside the same browser session."""
     print("Opening browser session through virtual display...")
 
-    session_data = {"cookies": {}, "user_agent": ""}
     profile_path = os.path.abspath("./tesla_profile")
 
     if not os.path.exists(profile_path):
         os.makedirs(profile_path)
 
-    with SB(
-        uc=True,
-        xvfb=True,
-        user_data_dir=profile_path,
-    ) as sb:
-        encoded_zip = urllib.parse.quote_plus(zip_code)
-        url = (
-            f"https://www.tesla.com/en_CA/inventory/new/{model_code}"
-            f"?arrangeby=relevance&zip={encoded_zip}&range=200"
-        )
+    encoded_zip = urllib.parse.quote_plus(args.zip)
 
-        sb.uc_open_with_reconnect(url, reconnect_time=6)
-        time.sleep(3)
-
-        for cookie in sb.get_cookies():
-            session_data["cookies"][cookie["name"]] = cookie["value"]
-
-        session_data["user_agent"] = sb.get_user_agent()
-
-    print(" -> New authentication profile generated cleanly.")
-    save_json_file(SESSION_CACHE_FILE, session_data)
-    return session_data
-
-
-def request_inventory_safely(args, session):
-    model_mapping = {
-        "ct": "Cybertruck",
-        "my": "Model Y",
-        "m3": "Model 3",
-    }
-    model_name = model_mapping.get(args.model, args.model.upper())
-
-    print(
-        f"Fetching live database rows for {model_name.upper()} "
-        f"in {args.region} ({args.zip})..."
+    inventory_page_url = (
+        f"https://www.tesla.com/en_CA/inventory/new/{args.model}"
+        f"?arrangeby=relevance"
+        f"&zip={encoded_zip}"
+        f"&range={args.range}"
     )
-
-    headers = {
-        "accept": "application/json, text/plain, */*",
-        "accept-language": "en-US,en;q=0.9",
-        "cache-control": "no-cache",
-        "pragma": "no-cache",
-        "referer": (
-            f"https://www.tesla.com/en_CA/inventory/new/{args.model}"
-            f"?arrangeby=relevance"
-            f"&zip={urllib.parse.quote_plus(args.zip)}"
-            f"&range={args.range}"
-        ),
-        "sec-ch-ua": (
-        '"Chromium";v="151", "Google Chrome";v="151", '
-        '"Not_A Brand";v="99"'
-        ),
-        "sec-ch-ua-platform": '"Linux"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": session["user_agent"],
-    }
 
     query_params = {
         "query": {
@@ -210,32 +159,104 @@ def request_inventory_safely(args, session):
     if args.payment_range:
         query_params["query"]["paymentRange"] = args.payment_range
 
-    encoded_query = urllib.parse.quote(json.dumps(query_params))
+    encoded_query = urllib.parse.quote(
+        json.dumps(query_params, separators=(",", ":"))
+    )
+
     api_url = (
         "https://www.tesla.com/inventory/api/v4/inventory-results"
         f"?query={encoded_query}"
     )
 
+    with SB(
+        uc=True,
+        xvfb=True,
+        user_data_dir=profile_path,
+    ) as sb:
+        sb.uc_open_with_reconnect(
+            inventory_page_url,
+            reconnect_time=6,
+        )
+
+        time.sleep(3)
+
+        sb.driver.set_script_timeout(40)
+
+        script = """
+        const url = arguments[0];
+        const done = arguments[arguments.length - 1];
+
+        fetch(url, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "accept": "application/json, text/plain, */*"
+            },
+            cache: "no-store"
+        })
+        .then(async response => {
+            const text = await response.text();
+
+            done({
+                status: response.status,
+                text: text
+            });
+        })
+        .catch(error => {
+            done({
+                status: 0,
+                text: "",
+                error: String(error)
+            });
+        });
+        """
+
+        result = sb.driver.execute_async_script(script, api_url)
+
+    return result
+
+def request_inventory_safely(args):
+    model_mapping = {
+        "ct": "Cybertruck",
+        "my": "Model Y",
+        "m3": "Model 3",
+    }
+    model_name = model_mapping.get(args.model, args.model.upper())
+
+    print(
+        f"Fetching live database rows for {model_name.upper()} "
+        f"in {args.region} ({args.zip})..."
+    )
+
     try:
-        response = curl_requests.get(
-            api_url,
-            headers=headers,
-            cookies=session["cookies"],
-            impersonate="chrome",
-            timeout=30,
-        )
+        response = fetch_inventory_via_browser(args)
     except Exception as e:
-        print(f" -> Inventory request failed before receiving a response: {e}")
-        return False
-
-    if response.status_code != 200:
         print(
-            f" -> Access Denied (Status {response.status_code}). "
-            "Session token expired or rejected."
+            f" -> Browser inventory request failed before "
+            f"receiving a response: {e}"
         )
         return False
 
-    payload = response.text
+    if not response:
+        print(" -> Browser returned no inventory response.")
+        return False
+
+    status_code = response.get("status", 0)
+
+    if status_code != 200:
+        error = response.get("error")
+
+        if error:
+            print(f" -> Browser request error: {error}")
+
+        print(
+            f" -> Access Denied (Status {status_code}). "
+            "Tesla rejected the browser inventory request."
+        )
+        return False
+
+    payload = response.get("text", "")
+
     if not payload:
         print(
             f" -> Success! Empty response from server. "
@@ -523,33 +544,25 @@ def main():
 
     args = parser.parse_args()
 
-    # Attempt cached verification session token extraction.
-    session = load_json_file(SESSION_CACHE_FILE)
-
-    if not session:
-        print(" -> No dynamic profile tracking cache found.")
-        session = get_live_akamai_session(args.model, args.zip)
-
     print("=" * 70)
 
-    # Process inventory request safely with one SeleniumBase refresh retry.
-    success = request_inventory_safely(args, session)
+    success = request_inventory_safely(args)
 
     if not success:
         print(
-            "\n -> Cache validation failed or dropped by proxy. "
-            "Refreshing credentials via SeleniumBase..."
+            "\n -> First browser inventory request failed. "
+            "Retrying once with a fresh browser session..."
         )
 
-        session = get_live_akamai_session(args.model, args.zip)
+        time.sleep(5)
 
         print("-" * 70)
 
-        success = request_inventory_safely(args, session)
+        success = request_inventory_safely(args)
 
         if not success:
             print(
-                " -> Inventory request failed again after session refresh. "
+                " -> Inventory request failed again after browser retry. "
                 "Inventory cache was left unchanged."
             )
 
