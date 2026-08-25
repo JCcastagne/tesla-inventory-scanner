@@ -115,10 +115,7 @@ def save_json_file(file_path, data):
 # MAIN TRACKING PIPELINE
 # ==============================================================================
 def get_live_akamai_session(model_code, zip_code):
-    print(
-        "Opening background channel (Headless=True) "
-        "to clear Akamai verification layers..."
-    )
+    print("Opening browser session through virtual display...")
 
     session_data = {"cookies": {}, "user_agent": ""}
     profile_path = os.path.abspath("./tesla_profile")
@@ -126,7 +123,11 @@ def get_live_akamai_session(model_code, zip_code):
     if not os.path.exists(profile_path):
         os.makedirs(profile_path)
 
-    with SB(uc=True, headless=True, user_data_dir=profile_path) as sb:
+    with SB(
+        uc=True,
+        xvfb=True,
+        user_data_dir=profile_path,
+    ) as sb:
         encoded_zip = urllib.parse.quote_plus(zip_code)
         url = (
             f"https://www.tesla.com/en_CA/inventory/new/{model_code}"
