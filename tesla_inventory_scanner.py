@@ -9,6 +9,7 @@ import os
 import sys
 import json
 import time
+import asyncio
 import urllib.parse
 import argparse
 import nodriver as uc
@@ -185,7 +186,7 @@ def fetch_inventory_via_browser(args):
             await page
 
             # Give Tesla/Akamai time to complete browser-side initialization.
-            await uc.sleep(8)
+            await asyncio.sleep(8)
 
             current_url = page.url
 
