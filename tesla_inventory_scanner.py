@@ -172,7 +172,7 @@ def fetch_inventory_via_browser(args):
         try:
             browser = await uc.start(
                 headless=False,
-                no_sandbox=True,
+                sandbox=True,
                 user_data_dir=profile_path,
                 browser_executable_path="/usr/bin/google-chrome",
                 browser_args=[
